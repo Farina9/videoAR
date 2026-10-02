@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>AR Video Experience</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    .a-enter-vr, .a-enter-ar, .a-orientation-modal, .a-modal, #a-scene-container { 
+      display: none !important; 
+      visibility: hidden !important; 
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+    #audio-toggle-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #audio-toggle-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+  <script>
+    let isGlobalMuted = false;
+    AFRAME.registerComponent("ar-video-controller", {
+      schema: {
+        video: { type: "selector" },
+        autoPlay: { type: "boolean", default: true }
+      },
+      init: function () {
+        const vid = this.data.video;
+        if (!vid) return;
+        this.el.addEventListener("targetFound", () => {
+          if (this.data.autoPlay) {
+            vid.muted = isGlobalMuted;
+            vid.play().catch(e => console.log("Waiting for user tap:", e));
+          }
+        });
+        this.el.addEventListener("targetLost", () => {
+          vid.pause();
+        });
+      }
+    });
+    function toggleAudio() {
+      isGlobalMuted = !isGlobalMuted;
+      const vids = document.querySelectorAll("video");
+      vids.forEach(v => { v.muted = isGlobalMuted; });
+      const btn = document.getElementById("audio-toggle-btn");
+      if (btn) {
+        btn.innerHTML = isGlobalMuted 
+          ? "<span>🔇</span><span>صدا: خاموش</span>" 
+          : "<span>🔊</span><span>صدا: روشن</span>";
+      }
+    }
+  </script>
+</head>
+<body>
+  <button id="audio-toggle-btn" onclick="toggleAudio()">
+    <span>🔊</span>
+    <span>صدا: روشن</span>
+  </button>
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind;" 
+    color-space="sRGB" 
+    renderer="colorManagement: true, physicallyCorrectLights" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
+    <a-assets>
+      <video id="vid-0" src="videos/video1.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
+      <video id="vid-1" src="videos/video2.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
+    </a-assets>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- تارگت 0 : ویدیوی اول -->
+    <a-entity mindar-image-target="targetIndex: 0" ar-video-controller="video: #vid-0; autoPlay: true">
+      <a-plane 
+        src="#vid-0" 
+        position="0 0 0.01" 
+        rotation="0 0 0" 
+        width="1" 
+        height="0.56"
+        material="shader: flat; transparent: true; opacity: 1;">
+      </a-plane>
+    </a-entity>
+
+    <!-- تارگت 1 : ویدیوی 2 -->
+    <a-entity mindar-image-target="targetIndex: 1" ar-video-controller="video: #vid-1; autoPlay: true">
+      <a-plane 
+        src="#vid-1" 
+        position="0 0 0.01" 
+        rotation="0 0 0" 
+        width="1" 
+        height="0.56"
+        material="shader: flat; transparent: true; opacity: 1;">
+      </a-plane>
+    </a-entity>
+  </a-scene>
+</body>
+</html>
